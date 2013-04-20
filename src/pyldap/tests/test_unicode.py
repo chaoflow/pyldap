@@ -1,8 +1,13 @@
 from __future__ import absolute_import
 
+from ldap import SCOPE_BASE
+from ldap import NO_SUCH_OBJECT
+from ldap import MOD_REPLACE
+
 from .. import PyReconnectLDAPObject
 from ..testing import SlapdTestCase as TestCase
 
+import ipdb
 
 class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
     """Test the UnicodeUtf8 mixin with a ReconnectLDAPObject
@@ -23,6 +28,12 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
                   ('userPassword', UTF8_PW)),
     }
 
+    UNICODE_ENTRIES = {
+        UNICODE_DN: (('objectClass', ['organization']),
+                     ('o', UNICODE),
+                     ('userPassword', UNICODE_PW)),
+    }
+
     LDAPObject = PyReconnectLDAPObject
 
     def setUp(self):
@@ -34,26 +45,41 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
         self.assertEquals(self.UTF8.decode('utf8'), u'\xe4')
         self.assertEquals(self.UTF8_DN.decode('utf8'), u'o=\xe4,o=o')
 
-    def add_s(self):
-        pass
-
-    def delete_s(self):
-        pass
-
     def test_bind_whoami_s(self):
         self.ldap.bind_s(self.UTF8_DN, self.UTF8_PW)
         self.assertEqual(self.ldap.whoami_s(), 'dn:' + self.UTF8_DN)
         self.pyldap.bind_s(self.UNICODE_DN, self.UNICODE_PW)
-        self.assertEqual(self.pyldap.whoami_(), 'dn:' + self.UNICODE_DN)
-
-    def test_modify_s(self):
-        pass
-
-    def test_result(self):
-        pass
+        self.assertEqual(self.pyldap.whoami_s(), 'dn:' + self.UNICODE_DN)
 
     def test_search(self):
-        pass
+        result = self.pyldap.search(self.UNICODE_DN, SCOPE_BASE)
+        self.assertTrue(result is not None)
 
     def test_search_s(self):
+        result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+        self.assertEqual(result[0], self.UNICODE_DN)
+        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_PW)
+
+    def test_add_s(self):
+        self.pyldap.delete_s(self.UNICODE_DN)
+        self.pyldap.add_s(self.UNICODE_DN,
+                          self.UNICODE_ENTRIES[self.UNICODE_DN])
+        result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+        self.assertEqual(result[0], self.UNICODE_DN)
+        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_PW)
+
+    def test_delete_s(self):
+        result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)
+        self.assertTrue(result is not None)
+        self.pyldap.delete_s(self.UNICODE_DN)
+        self.assertRaises(NO_SUCH_OBJECT, lambda: self.pyldap.search_s(
+            self.UNICODE_DN, SCOPE_BASE))
+
+    def test_modify_s(self):
+        self.pyldap.modify_s(self.UNICODE_DN,
+                             [(MOD_REPLACE, 'userPassword', self.UNICODE_DN)])
+        result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_DN)
+
+    def test_result(self):
         pass
