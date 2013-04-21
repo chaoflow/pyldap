@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from ldap import SCOPE_BASE
 from ldap import NO_SUCH_OBJECT
 from ldap import MOD_REPLACE
+from ldap import MOD_ADD
 
 from .. import PyReconnectLDAPObject
 from ..testing import SlapdTestCase as TestCase
@@ -79,7 +80,15 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
         self.pyldap.modify_s(self.UNICODE_DN,
                              [(MOD_REPLACE, 'userPassword', self.UNICODE_DN)])
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_DN)
+        self.assertEqual(result[1]['userPassword'], self.UNICODE_DN)
 
     def test_result(self):
         pass
+
+    def test_binary(self):
+        self.pyldap.modify_s(self.UNICODE_DN,
+                             [(MOD_ADD, 'description',
+                               self.UNICODE_DN)])
+        result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+        self.assertEqual(result[1]['description'],
+                         bytearray(self.UNICODE_DN, 'utf8'))

@@ -7,6 +7,7 @@
 from __future__ import absolute_import
 
 from ldap import ldapobject
+from ldap import RES_ANY
 
 import ipdb
 
@@ -14,14 +15,14 @@ ENCODING = "utf8"
 
 
 BINARY_ATTRIBUTES=(
-    'jpegPhoto'
+    'jpegPhoto', 'description'
 )
 
 BOOLEAN_ATTRIBUTES=(
 )
 
 SINGLE_VALUED=(
-    'dc', 'domainComponent'
+    'userPassword', 'domainComponent', 'description'
 )
 
 
@@ -43,8 +44,8 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
  # encode dn --- check
  # encode strings in modlist --- check
  # convert booleans to utf8 strings --- no boolean attributes used, or???
- # convert bytearray to string (maybe base64)
- # return values only for single valued attributes???
+ # convert bytearray to string (maybe base64) --- check
+ # return values only for single valued attributes --- check
 
     def simple_bind(self, who='', cred='', serverctrls=None, clientctrls=None):
         who = self._encode(who)
@@ -57,60 +58,71 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
         return self._decode(result)
 
     def delete_ext(self, dn, serverctrls=None, clientctrls=None):
+        dn = self._encode(dn)
         return ldapobject.ReconnectLDAPObject.delete_ext(
-            self, self._encode(dn), serverctrls, clientctrls)
+            self, dn, serverctrls, clientctrls)
 
     def add_ext(self, dn, modlist, serverctrls=None, clientctrls=None):
-        return ldapobject.ReconnectLDAPObject.add_ext(self, self._encode(dn),
-                                                   self._encodeaddlist(modlist),
+        dn = self._encode(dn)
+        modlist = self._encodeaddlist(modlist)
+        return ldapobject.ReconnectLDAPObject.add_ext(self, dn,
+                                                   modlist,
                                                    serverctrls, clientctrls)
 
     def search_ext(self, base, scope, filterstr='(objectClass=*)',
                    attrlist=None, attrsonly=0, serverctrls=None,
                    clientctrls=None, timeout=-1, sizelimit=0):
+        base = self._encode(base)
+        filterstr = self._encode(filterstr)
+        attrlist = self._encode_listorvalue(attrlist)
         #XXX test filterstr and attrlist!
         return ldapobject.ReconnectLDAPObject.search_ext(self,
-                                            self._encode(base),
-                                            scope,
-                                            self._encode(filterstr),
-                                            self._encode_listorvalue(attrlist),
-                                            attrsonly,
-                                            serverctrls,
-                                            clientctrls,
-                                            timeout, sizelimit)
+                                                         base,
+                                                         scope,
+                                                         filterstr,
+                                                         attrlist,
+                                                         attrsonly,
+                                                         serverctrls,
+                                                         clientctrls,
+                                                         timeout, sizelimit)
 
     def search_ext_s(self, base, scope, filterstr='(objectClass=*)',
                    attrlist=None, attrsonly=0, serverctrls=None,
                    clientctrls=None, timeout=-1, sizelimit=0):
+        base = self._encode(base)
+        filterstr = self._encode(filterstr)
+        attrlist = self._encode_listorvalue(attrlist)
         #XXX test filterstr and attrlist!
         result = ldapobject.ReconnectLDAPObject.search_ext_s(self,
-                                            self._encode(base),
-                                            scope,
-                                            self._encode(filterstr),
-                                            self._encode_listorvalue(attrlist),
-                                            attrsonly,
-                                            serverctrls,
-                                            clientctrls,
-                                            timeout, sizelimit)
+                                                             base,
+                                                             scope,
+                                                             filterstr,
+                                                             attrlist,
+                                                             attrsonly,
+                                                             serverctrls,
+                                                             clientctrls,
+                                                             timeout, sizelimit)
         return self._decode_search(result)
 
     def modify_ext(self, dn, modlist, serverctrls=None, clientctrls=None):
-        return ldapobject.ReconnectLDAPObject.modify_ext(self, self._encode(dn),
-                                                self._encodemodifylist(modlist),
-                                                serverctrls,
-                                                clientctrls)
+        dn = self._encode(dn)
+        modlist = self._encodemodifylist(modlist)
+        return ldapobject.ReconnectLDAPObject.modify_ext(self, dn,
+                                                         modlist,
+                                                         serverctrls,
+                                                         clientctrls)
 
 
-    #def result4(self, *args, **kw):
-        #result = ldapobject.ReconnectLDAPObject.result4(self, *args, **kw)
-        #results types: dn, (dn, attrs), [dn, attrs]
-        #result = self._decode(result)
+    #def result4(self, msgid=RES_ANY, all=1, timeout=None, add_ctrls=0,
+        #        add_intermediates=0, add_extop=0, resp_ctrl_classes=None):
+        #result = ldapobject.ReconnectLDAPObject.result4(self, msgid, all,
+        #                                                timeout, add_ctrls,
+        #                                                add_intermediates,
+        #                                                add_extop,
+        #                                                resp_ctrl_classes)
         #ipdb.set_trace()
-        #if isinstance(result, list):
-        #    for index, x in result:
-        #        if isinstance(x, tuple):
-        #            ipdb.set_trace()
-        #return result
+        #return self._decode_search(result)
+
 
 #-----------------------------------------------------------------------------
     def _encode(self, s):
@@ -144,9 +156,19 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
             return s.decode(ENCODING)
         return s
 
-    def _decode_list(self, inputlist):
+    def _decode_list(self, key, inputlist):
+        """ encodes return values to unicode and returns single
+            element if list contains only one element
+        """
         for index, x in enumerate(inputlist):
+            if key in BINARY_ATTRIBUTES:
+                #XXX check which attrs other then certificates
+                #    should be converted
+                x = bytearray(x)
             inputlist[index] = self._decode(x)
+        if key in SINGLE_VALUED:
+            #XXX determine if single-valued attribute over schema
+            return inputlist[0]
         return inputlist
 
     def _decode_search(self, result):
@@ -155,7 +177,7 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
                 d = dict()
                 for key, value in x[1].iteritems():
                     new_key = self._decode(key)
-                    new_value = self._decode_list(value)
+                    new_value = self._decode_list(key, value)
                     d[new_key] = new_value
                 result[index] = (self._decode(x[0]), d)
         return result
