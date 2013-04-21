@@ -47,8 +47,10 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
  # return values only for single valued attributes???
 
     def simple_bind(self, who='', cred='', serverctrls=None, clientctrls=None):
+        who = self._encode(who)
+        cred = self._encode(cred)
         return ldapobject.ReconnectLDAPObject.simple_bind(self,
-                self._encode(who), self._encode(cred), serverctrls, clientctrls)
+                who, cred, serverctrls, clientctrls)
 
     def whoami_s(self):
         result = ldapobject.ReconnectLDAPObject.whoami_s(self)
