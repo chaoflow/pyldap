@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 from ldap import ldapobject
 from ldap import RES_ANY
+from ldap import RES_SEARCH_ENTRY
 
 import ipdb
 
@@ -69,22 +70,24 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
                                                    modlist,
                                                    serverctrls, clientctrls)
 
-    def search_ext(self, base, scope, filterstr='(objectClass=*)',
-                   attrlist=None, attrsonly=0, serverctrls=None,
-                   clientctrls=None, timeout=-1, sizelimit=0):
+    def search(self, base, scope, filterstr='(objectClass=*)', attrlist=None,
+                attrsonly=0):
         base = self._encode(base)
         filterstr = self._encode(filterstr)
         attrlist = self._encode_listorvalue(attrlist)
         #XXX test filterstr and attrlist!
-        return ldapobject.ReconnectLDAPObject.search_ext(self,
-                                                         base,
-                                                         scope,
-                                                         filterstr,
-                                                         attrlist,
-                                                         attrsonly,
-                                                         serverctrls,
-                                                         clientctrls,
-                                                         timeout, sizelimit)
+        """asynchronous ldap search returning a generator
+        """
+        msgid = ldapobject.ReconnectLDAPObject.search(self, base, scope,
+                                        filterstr=filterstr, attrlist=attrlist)
+        rtype = RES_SEARCH_ENTRY
+        while rtype is RES_SEARCH_ENTRY:
+            # Fetch results single file, the final result (usually)
+            # has an empty field. <sigh>
+            (rtype, data) = ldapobject.ReconnectLDAPObject.result(self,
+                                               msgid=msgid, all=0, timeout=-1)
+            if rtype is RES_SEARCH_ENTRY or data:
+                yield self._decode_search(data)
 
     def search_ext_s(self, base, scope, filterstr='(objectClass=*)',
                    attrlist=None, attrsonly=0, serverctrls=None,
@@ -111,17 +114,6 @@ class PyReconnectLDAPObject(ldapobject.ReconnectLDAPObject):
                                                          modlist,
                                                          serverctrls,
                                                          clientctrls)
-
-
-    #def result4(self, msgid=RES_ANY, all=1, timeout=None, add_ctrls=0,
-        #        add_intermediates=0, add_extop=0, resp_ctrl_classes=None):
-        #result = ldapobject.ReconnectLDAPObject.result4(self, msgid, all,
-        #                                                timeout, add_ctrls,
-        #                                                add_intermediates,
-        #                                                add_extop,
-        #                                                resp_ctrl_classes)
-        #ipdb.set_trace()
-        #return self._decode_search(result)
 
 
 #-----------------------------------------------------------------------------
