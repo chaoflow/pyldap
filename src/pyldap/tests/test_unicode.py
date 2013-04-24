@@ -86,6 +86,8 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_result(self):
         pass
+        #res = self.pyldap._get_single_valued()
+        #ipdb.set_trace()
 
     def test_binary(self):
         self.pyldap.modify_s(self.UNICODE_DN,
