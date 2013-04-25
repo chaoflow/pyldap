@@ -6,7 +6,14 @@
 """
 from __future__ import absolute_import
 
-from ldap import ldapobject
-from pyldap.aspects import pythonise
+import ldap
 
-PyReconnectLDAPObject = pythonise(ldapobject.ReconnectLDAPObject)
+from . import aspects
+
+
+SCOPE_BASE = ldap.SCOPE_BASE
+SCOPE_ONELEVEL = ldap.SCOPE_ONELEVEL
+SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
+
+
+PyReconnectLDAPObject = aspects.pythonise(ldap.ldapobject.ReconnectLDAPObject)
