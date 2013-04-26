@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from ldap.filter import filter_format
 
-from node.ext.ldap.base import encode_utf8
-
 # all special characters except * are escaped, that means * can be
 # used to perform suffix/prefix/contains searches, monkey-patch if you
 # don't like
@@ -22,7 +20,6 @@ class LDAPFilter(object):
                 and not isinstance(queryFilter, basestring) \
                 and not isinstance(queryFilter, LDAPFilter):
             raise TypeError('Query filter must be LDAPFilter or string')
-        queryFilter = encode_utf8(queryFilter)
         self._filter = queryFilter
         if isinstance(queryFilter, LDAPFilter):
             self._filter = str(queryFilter)
@@ -138,13 +135,10 @@ def dict_to_filter(criteria, or_search=False, or_keys=None, or_values=None):
     or_values = (or_values is None) and or_search or or_values
     _filter = None
     for attr, values in criteria.items():
-        attr = encode_utf8(attr)
         if not isinstance(values, list):
             values = [values]
         attrfilter = None
         for value in values:
-            if isinstance(value, unicode):
-                value = encode_utf8(value)
             attr = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), attr))
             if isinstance(value, str):
                 value = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), value))
