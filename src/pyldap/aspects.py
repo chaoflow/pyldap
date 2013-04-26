@@ -12,7 +12,6 @@ from . import config
 
 
 class pythonise(Aspect):
-
     """
     Encode/Decode unicode to/from utf8
     ----------------------------------
@@ -51,12 +50,12 @@ class pythonise(Aspect):
     def search(_next, self, base, scope,
                filterstr='(objectClass=*)', attrlist=None,
                 attrsonly=0):
+        """asynchronous ldap search returning a generator
+        """
         base = self._encode(base)
         filterstr = self._encode(filterstr)
         attrlist = self._encode_listorvalue(attrlist)
         #XXX test filterstr and attrlist!
-        """asynchronous ldap search returning a generator
-        """
         msgid_res = _next(base, scope, filterstr=filterstr, attrlist=attrlist)
         rtype = RES_SEARCH_ENTRY
         while rtype is RES_SEARCH_ENTRY:
