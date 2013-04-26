@@ -63,7 +63,6 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_search_s(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-        #ipdb.set_trace()
         self.assertEqual(result[0], self.UNICODE_DN)
         self.assertEqual(result[1]['description'], self.UNICODE_DN)
 

@@ -15,7 +15,6 @@ BINARY_ATTRIBUTES = (
 
 
 BOOLEAN_ATTRIBUTES = (
-    'description'
 )
 
 # allows other positive flags, ie 1 etc.

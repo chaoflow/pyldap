@@ -121,27 +121,22 @@ class pythonise(Aspect):
             return s.decode(config.ENCODING)
         return s
 
+
     def _decode_list(self, key, inputlist):
-        """ encodes return values to unicode and returns single
-            element if list contains only one element
-        """
-        attrtoremove = []
-        for index, x in enumerate(inputlist):
+        result = []
+        if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
+            return result
+        for x in inputlist:
             if key in config.BOOLEAN_ATTRIBUTES:
-                inputlist[index] = x in config.POSITIVE_BOOLEAN_VALUES
-            if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
-                # block specific outgoing attributes ie passwords etc
-                attrtoremove.append(index)
-            if key in config.BINARY_ATTRIBUTES:
-                #XXX check which attrs other then certificates
-                #    should be converted
-                x = bytearray(x)
-            inputlist[index] = self._decode(x)
+                result.append(x in config.POSITIVE_BOOLEAN_VALUES)
+            else:
+                if key in config.BINARY_ATTRIBUTES:
+                    x = bytearray(x)
+                result.append(self._decode(x))
         if key in config.SINGLE_VALUED:
             #XXX determine if single-valued attribute over schema
-            return inputlist[0]
-        map(inputlist.pop, attrtoremove)
-        return inputlist
+            return result[0]
+        return result
 
     def _decode_search(self, result):
         for index, x in enumerate(result):
