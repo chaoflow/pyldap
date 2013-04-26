@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from metachao import aspect
 from metachao.aspect import Aspect
 
@@ -5,21 +7,9 @@ from ldap import RES_ANY
 from ldap import RES_SEARCH_ENTRY
 from ldap import SCOPE_BASE
 
-import ipdb
 
-ENCODING = "utf8"
+from . import config
 
-
-BINARY_ATTRIBUTES=(
-    'jpegPhoto', 'description'
-)
-
-BOOLEAN_ATTRIBUTES=(
-)
-
-SINGLE_VALUED=(
-    'userPassword', 'domainComponent', 'description'
-)
 
 class pythonise(Aspect):
 
@@ -34,8 +24,6 @@ class pythonise(Aspect):
     unicode instead, for all strings that are really strings.
 
     """
-    encoding = ENCODING
-
     @aspect.plumb
     def simple_bind(_next, self, who='', cred='',
                     serverctrls=None, clientctrls=None):
@@ -105,7 +93,7 @@ class pythonise(Aspect):
 #-----------------------------------------------------------------------------
     def _encode(self, s):
         if isinstance(s, unicode):
-            return s.encode(ENCODING)
+            return s.encode(config.ENCODING)
         return s
 
     def _encodeaddlist(self, modlist):
@@ -131,7 +119,7 @@ class pythonise(Aspect):
 
     def _decode(self, s):
         if isinstance(s, str):
-            return s.decode(ENCODING)
+            return s.decode(config.ENCODING)
         return s
 
     def _decode_list(self, key, inputlist):
@@ -139,12 +127,12 @@ class pythonise(Aspect):
             element if list contains only one element
         """
         for index, x in enumerate(inputlist):
-            if key in BINARY_ATTRIBUTES:
+            if key in config.BINARY_ATTRIBUTES:
                 #XXX check which attrs other then certificates
                 #    should be converted
                 x = bytearray(x)
             inputlist[index] = self._decode(x)
-        if key in SINGLE_VALUED:
+        if key in config.SINGLE_VALUED:
             #XXX determine if single-valued attribute over schema
             return inputlist[0]
         return inputlist
