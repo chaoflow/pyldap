@@ -89,13 +89,6 @@ class pythonise(Aspect):
     def result(_next, self, msgid=RES_ANY, all=0, timeout=None):
         return _next(msgid, all, timeout)
 
-    #@aspect.plumb
-    #def __getitem__(_next, self, dn):
-    #    dn = self._encode(dn)
-    #    #XXX filterstr usefull?
-    #    userUUID = self.search_s(dn, SCOPE_BASE, attrlist['entryUUID'])
-    #    ipdb.set_trace()
-
 #-----------------------------------------------------------------------------
     def _encode(self, s):
         if isinstance(s, unicode):
@@ -132,7 +125,13 @@ class pythonise(Aspect):
         """ encodes return values to unicode and returns single
             element if list contains only one element
         """
+        attrtoremove = []
         for index, x in enumerate(inputlist):
+            if key in config.BOOLEAN_ATTRIBUTES:
+                inputlist[index] = x in config.POSITIVE_BOOLEAN_VALUES
+            if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
+                # block specific outgoing attributes ie passwords etc
+                attrtoremove.append(index)
             if key in config.BINARY_ATTRIBUTES:
                 #XXX check which attrs other then certificates
                 #    should be converted
@@ -141,6 +140,7 @@ class pythonise(Aspect):
         if key in config.SINGLE_VALUED:
             #XXX determine if single-valued attribute over schema
             return inputlist[0]
+        map(inputlist.pop, attrtoremove)
         return inputlist
 
     def _decode_search(self, result):

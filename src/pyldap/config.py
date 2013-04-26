@@ -10,13 +10,18 @@ BLOCKED_OUTGOING_ATTRIBUTES = (
 )
 
 BINARY_ATTRIBUTES = (
-    'jpegPhoto', 'description'
+    'jpegPhoto'
 )
 
 
 BOOLEAN_ATTRIBUTES = (
+    'description'
 )
 
+# allows other positive flags, ie 1 etc.
+POSITIVE_BOOLEAN_VALUES = (
+ 'True'
+)
 
 SINGLE_VALUED = (
     'domainComponent', 'description'

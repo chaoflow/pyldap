@@ -26,13 +26,16 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
     ENTRIES = {
         UTF8_DN: (('objectClass', ['organization']),
                   ('o', UTF8),
-                  ('userPassword', UTF8_PW)),
+                  ('userPassword', UTF8_PW),
+                  ('description', UTF8_DN))
     }
 
     UNICODE_ENTRIES = {
         UNICODE_DN: (('objectClass', ['organization']),
                      ('o', UNICODE),
-                     ('userPassword', UNICODE_PW)),
+                     ('userPassword', UNICODE_PW),
+                     ('description', UNICODE_DN))
+
     }
 
     LDAPObject = PyReconnectLDAPObject
@@ -60,8 +63,9 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_search_s(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+        #ipdb.set_trace()
         self.assertEqual(result[0], self.UNICODE_DN)
-        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_PW)
+        self.assertEqual(result[1]['description'], self.UNICODE_DN)
 
     def test_add_s(self):
         self.pyldap.delete_s(self.UNICODE_DN)
@@ -69,7 +73,7 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
                           self.UNICODE_ENTRIES[self.UNICODE_DN])
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
         self.assertEqual(result[0], self.UNICODE_DN)
-        self.assertEqual(result[1]['userPassword'][0], self.UNICODE_PW)
+        self.assertEqual(result[1]['description'], self.UNICODE_DN)
 
     def test_delete_s(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)
@@ -80,19 +84,18 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_modify_s(self):
         self.pyldap.modify_s(self.UNICODE_DN,
-                             [(MOD_REPLACE, 'userPassword', self.UNICODE_DN)])
+                             [(MOD_REPLACE, 'description', self.UNICODE)])
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-        self.assertEqual(result[1]['userPassword'], self.UNICODE_DN)
+        self.assertEqual(result[1]['description'], self.UNICODE)
 
-    def test_result(self):
-        pass
-        #res = self.pyldap._get_single_valued()
-        #ipdb.set_trace()
-
-    def test_binary(self):
-        self.pyldap.modify_s(self.UNICODE_DN,
-                             [(MOD_ADD, 'description',
-                               self.UNICODE_DN)])
+    def test_blockattributes(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-        self.assertEqual(result[1]['description'],
-                         bytearray(self.UNICODE_DN, 'utf8'))
+        self.assertEqual(result[1]['userPassword'], [])
+
+    #def test_binary(self):
+    #    self.pyldap.modify_s(self.UNICODE_DN,
+    #                         [(MOD_ADD, 'description',
+    #                           self.UNICODE_DN)])
+    #    result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+    #    self.assertEqual(result[1]['userPassword'],
+    #                     bytearray(self.UNICODE_DN, 'utf8'))
