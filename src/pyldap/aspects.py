@@ -133,7 +133,7 @@ class pythonise(Aspect):
                 if key in config.BINARY_ATTRIBUTES:
                     x = bytearray(x)
                 result.append(self._decode(x))
-        if key in config.SINGLE_VALUED:
+        if key in config.SINGLE_VALUED and len(result)>0:
             #XXX determine if single-valued attribute over schema
             return result[0]
         return result
