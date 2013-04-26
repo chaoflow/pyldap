@@ -5,15 +5,19 @@
 ENCODING = "utf8"
 
 
-BINARY_ATTRIBUTES=(
+BLOCKED_OUTGOING_ATTRIBUTES = (
+    'userPassword',
+)
+
+BINARY_ATTRIBUTES = (
     'jpegPhoto', 'description'
 )
 
 
-BOOLEAN_ATTRIBUTES=(
+BOOLEAN_ATTRIBUTES = (
 )
 
 
-SINGLE_VALUED=(
-    'userPassword', 'domainComponent', 'description'
+SINGLE_VALUED = (
+    'domainComponent', 'description'
 )
