@@ -8,7 +8,8 @@ A more pythonic API to python-ldap, possibly to be merged into python-ldap.'
 #longdesc = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 
 install_requires = [
-    'setuptools'
+    'setuptools',
+    'python-ldap'
 ]
 
 if sys.version_info[0] is 2 and sys.version_info[1] < 7:
