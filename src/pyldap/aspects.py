@@ -28,7 +28,7 @@ class pythonise(Aspect):
                     serverctrls=None, clientctrls=None):
         who = self._encode(who)
         cred = self._encode(cred)
-        return _next( who, cred, serverctrls, clientctrls)
+        return _next(who, cred, serverctrls, clientctrls)
 
     @aspect.plumb
     def whoami_s(_next, self):
@@ -49,7 +49,7 @@ class pythonise(Aspect):
     @aspect.plumb
     def search(_next, self, base, scope,
                filterstr='(objectClass=*)', attrlist=None,
-                attrsonly=0):
+               attrsonly=0):
         """asynchronous ldap search returning a generator
         """
         base = self._encode(base)
@@ -68,8 +68,8 @@ class pythonise(Aspect):
 
     @aspect.plumb
     def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
-                   attrlist=None, attrsonly=0, serverctrls=None,
-                   clientctrls=None, timeout=-1, sizelimit=0):
+                     attrlist=None, attrsonly=0, serverctrls=None,
+                     clientctrls=None, timeout=-1, sizelimit=0):
         base = self._encode(base)
         filterstr = self._encode(filterstr)
         attrlist = self._encode_listorvalue(attrlist)
@@ -96,7 +96,7 @@ class pythonise(Aspect):
         return s
 
     def _encodeaddlist(self, modlist):
-        result = [(self._encode(x[0]) ,
+        result = [(self._encode(x[0]),
                    self._encode_listorvalue(x[1]))
                   for x in modlist]
         return result
@@ -121,7 +121,6 @@ class pythonise(Aspect):
             return s.decode(config.ENCODING)
         return s
 
-
     def _decode_list(self, key, inputlist):
         result = []
         if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
@@ -133,14 +132,14 @@ class pythonise(Aspect):
                 if key in config.BINARY_ATTRIBUTES:
                     x = bytearray(x)
                 result.append(self._decode(x))
-        if key in config.SINGLE_VALUED and len(result)>0:
+        if key in config.SINGLE_VALUED and len(result) > 0:
             #XXX determine if single-valued attribute over schema
             return result[0]
         return result
 
     def _decode_search(self, result):
         for index, x in enumerate(result):
-            if isinstance (x, tuple):
+            if isinstance(x, tuple):
                 d = dict()
                 for key, value in x[1].iteritems():
                     new_key = self._decode(key)
