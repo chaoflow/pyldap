@@ -124,8 +124,6 @@ class pythonise(Aspect):
 
     def _decode_list(self, key, inputlist):
         result = []
-        if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
-            return result
         for x in inputlist:
             if key in config.BOOLEAN_ATTRIBUTES:
                 result.append(x in config.POSITIVE_BOOLEAN_VALUES)
@@ -143,9 +141,10 @@ class pythonise(Aspect):
             if isinstance (x, tuple):
                 d = dict()
                 for key, value in x[1].iteritems():
-                    new_key = self._decode(key)
-                    new_value = self._decode_list(key, value)
-                    d[new_key] = new_value
+                    if key not in config.BLOCKED_OUTGOING_ATTRIBUTES:
+                        new_key = self._decode(key)
+                        new_value = self._decode_list(key, value)
+                        d[new_key] = new_value
                 result[index] = (self._decode(x[0]), d)
         return result
 

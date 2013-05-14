@@ -89,12 +89,6 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_blockattributes(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-        self.assertEqual(result[1]['userPassword'], [])
-
-    #def test_binary(self):
-    #    self.pyldap.modify_s(self.UNICODE_DN,
-    #                         [(MOD_ADD, 'description',
-    #                           self.UNICODE_DN)])
-    #    result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
-    #    self.assertEqual(result[1]['userPassword'],
-    #                     bytearray(self.UNICODE_DN, 'utf8'))
+        def getblockedattr():
+            return result[1]['userPassword']
+        self.assertRaises(KeyError, getblockedattr)
