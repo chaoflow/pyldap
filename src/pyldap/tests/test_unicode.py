@@ -57,7 +57,6 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_search(self):
         result = self.pyldap.search(self.UNICODE_DN, SCOPE_BASE)
-        #XXX generator returns a list, check if this is ok
         node = iter(result).next()[0]
         self.assertEqual(node[0], self.UNICODE_DN)
 

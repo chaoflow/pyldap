@@ -5,23 +5,23 @@
 ENCODING = "utf8"
 
 
-BLOCKED_OUTGOING_ATTRIBUTES = (
+BLOCKED_OUTGOING_ATTRIBUTES = [
     'userPassword',
-)
+]
 
-BINARY_ATTRIBUTES = (
+BINARY_ATTRIBUTES = [
     'jpegPhoto'
-)
+]
 
 
-BOOLEAN_ATTRIBUTES = (
-)
+BOOLEAN_ATTRIBUTES = [
+]
 
 # allows other positive flags, ie 1 etc.
-POSITIVE_BOOLEAN_VALUES = (
- 'True'
-)
+POSITIVE_BOOLEAN_VALUES = [
+    'True'
+]
 
-SINGLE_VALUED = (
+SINGLE_VALUED = [
     'domainComponent', 'description'
-)
+]

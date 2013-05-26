@@ -10,8 +10,129 @@ from ldap import SCOPE_BASE
 
 from . import config
 
+class searchGen(Aspect):
 
-class pythonise(Aspect):
+    @aspect.plumb
+    def search(_next, self, base, scope,
+               filterstr='(objectClass=*)', attrlist=None,
+               attrsonly=0):
+        """asynchronous ldap search returning a generator
+        """
+        msgid_res = _next(base, scope, filterstr=filterstr, attrlist=attrlist)
+        rtype = RES_SEARCH_ENTRY
+        while rtype is RES_SEARCH_ENTRY:
+            # Fetch results single file, the final result (usually)
+            # has an empty field. <sigh>
+            (rtype, data) = self.result(msgid=msgid_res,
+                                        all=0, timeout=-1)
+            if rtype is RES_SEARCH_ENTRY or data:
+                yield data
+
+
+class blockAttributes(Aspect):
+
+    @aspect.plumb
+    def search(_next, self, base, scope,
+               filterstr='(objectClass=*)', attrlist=None,
+               attrsonly=0):
+        for x in _next(base, scope, filterstr, attrlist, attrsonly):
+            yield self._blockattributes(x)
+
+    @aspect.plumb
+    def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
+                     attrlist=None, attrsonly=0, serverctrls=None,
+                     clientctrls=None, timeout=-1, sizelimit=0):
+        result = _next(base, scope, filterstr, attrlist, attrsonly,
+                       serverctrls, clientctrls, timeout, sizelimit)
+        return self._blockattributes(result)
+
+    def _blockattributes(self, result):
+        for x in result:
+            for key in x[1].keys():
+                if key in config.BLOCKED_OUTGOING_ATTRIBUTES:
+                    del x[1][key]
+        return result
+
+
+class convertBoolean(Aspect):
+
+    @aspect.plumb
+    def search(_next, self, base, scope,
+               filterstr='(objectClass=*)', attrlist=None,
+               attrsonly=0):
+        for x in _next(base, scope, filterstr, attrlist, attrsonly):
+            yield self._convertboolean(x)
+
+    @aspect.plumb
+    def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
+                     attrlist=None, attrsonly=0, serverctrls=None,
+                     clientctrls=None, timeout=-1, sizelimit=0):
+        result = _next(base, scope, filterstr, attrlist, attrsonly,
+                       serverctrls, clientctrls, timeout, sizelimit)
+        return self._convertboolean(result)
+
+    def _convertboolean(self, result):
+        for x in result:
+            for key in x[1].keys():
+                if key in config.BOOLEAN_ATTRIBUTES:
+                    for entry in x[1][key]:
+                        entry = (entry in config.POSITIVE_BOOLEAN_VALUES)
+        return result
+
+
+class convertBinary(Aspect):
+
+    @aspect.plumb
+    def search(_next, self, base, scope,
+               filterstr='(objectClass=*)', attrlist=None,
+               attrsonly=0):
+        for x in _next(base, scope, filterstr, attrlist, attrsonly):
+            yield self._convertbinary(x)
+
+    @aspect.plumb
+    def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
+                     attrlist=None, attrsonly=0, serverctrls=None,
+                     clientctrls=None, timeout=-1, sizelimit=0):
+        result = _next(base, scope, filterstr, attrlist, attrsonly,
+                       serverctrls, clientctrls, timeout, sizelimit)
+        return self._convertbinary(result)
+
+    def _convertbinary(self, result):
+        for x in result:
+            for key in x[1].keys():
+                if key in config.BINARY_ATTRIBUTES:
+                    for entry in x[1][key]:
+                        entry = bytearray(entry)
+        return result
+
+
+class getSingleValues(Aspect):
+
+    @aspect.plumb
+    def search(_next, self, base, scope,
+               filterstr='(objectClass=*)', attrlist=None,
+               attrsonly=0):
+        for x in _next(base, scope, filterstr, attrlist, attrsonly):
+            yield self._getsinglevalues(x)
+
+    @aspect.plumb
+    def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
+                     attrlist=None, attrsonly=0, serverctrls=None,
+                     clientctrls=None, timeout=-1, sizelimit=0):
+        result = _next(base, scope, filterstr, attrlist, attrsonly,
+                       serverctrls, clientctrls, timeout, sizelimit)
+        return self._getsinglevalues(result)
+
+    def _getsinglevalues(self, result):
+        for x in result:
+            for key in x[1].keys():
+               if (key in config.SINGLE_VALUED) and len(x[1][key]) > 0:
+                   #XXX determine if single-valued attribute over schema
+                   x[1][key] = x[1][key][0]
+        return result
+
+
+class encode(Aspect):
     """
     Encode/Decode unicode to/from utf8
     ----------------------------------
@@ -56,15 +177,17 @@ class pythonise(Aspect):
         filterstr = self._encode(filterstr)
         attrlist = self._encode_listorvalue(attrlist)
         #XXX test filterstr and attrlist!
-        msgid_res = _next(base, scope, filterstr=filterstr, attrlist=attrlist)
-        rtype = RES_SEARCH_ENTRY
-        while rtype is RES_SEARCH_ENTRY:
-            # Fetch results single file, the final result (usually)
-            # has an empty field. <sigh>
-            (rtype, data) = self.result(msgid=msgid_res,
-                                        all=0, timeout=-1)
-            if rtype is RES_SEARCH_ENTRY or data:
-                yield self._decode_search(data)
+        for x in _next(base, scope, filterstr, attrlist, attrsonly):
+            yield self._decode_search(x)
+#        msgid_res = _next(base, scope, filterstr=filterstr, attrlist=attrlist)
+#        rtype = RES_SEARCH_ENTRY
+#        while rtype is RES_SEARCH_ENTRY:
+#            # Fetch results single file, the final result (usually)
+#            # has an empty field. <sigh>
+#            (rtype, data) = self.result(msgid=msgid_res,
+#                                        all=0, timeout=-1)
+#            if rtype is RES_SEARCH_ENTRY or data:
+#                yield self._decode_search(data)
 
     @aspect.plumb
     def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
@@ -121,18 +244,10 @@ class pythonise(Aspect):
             return s.decode(config.ENCODING)
         return s
 
-    def _decode_list(self, key, inputlist):
+    def _decode_list(self, inputlist):
         result = []
         for x in inputlist:
-            if key in config.BOOLEAN_ATTRIBUTES:
-                result.append(x in config.POSITIVE_BOOLEAN_VALUES)
-            else:
-                if key in config.BINARY_ATTRIBUTES:
-                    x = bytearray(x)
-                result.append(self._decode(x))
-        if key in config.SINGLE_VALUED and len(result) > 0:
-            #XXX determine if single-valued attribute over schema
-            return result[0]
+            result.append(self._decode(x))
         return result
 
     def _decode_search(self, result):
@@ -140,10 +255,9 @@ class pythonise(Aspect):
             if isinstance(x, tuple):
                 d = dict()
                 for key, value in x[1].iteritems():
-                    if key not in config.BLOCKED_OUTGOING_ATTRIBUTES:
-                        new_key = self._decode(key)
-                        new_value = self._decode_list(key, value)
-                        d[new_key] = new_value
+                    new_key = self._decode(key)
+                    new_value = self._decode_list(value)
+                    d[new_key] = new_value
                 result[index] = (self._decode(x[0]), d)
         return result
 
