@@ -140,7 +140,7 @@ def dict_to_filter(criteria, or_search=False, or_keys=None, or_values=None):
         attrfilter = None
         for value in values:
             attr = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), attr))
-            if isinstance(value, str):
+            if isinstance(value, basestring):
                 value = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), value))
             valuefilter = LDAPFilter('(%s=%s)' % (attr, value))
             if attrfilter is None:
