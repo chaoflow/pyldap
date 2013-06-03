@@ -125,7 +125,7 @@ class pythonise(Aspect):
         result = []
         for x in inputlist:
             if key in config.BOOLEAN_ATTRIBUTES:
-                result.append(x in config.POSITIVE_BOOLEAN_VALUES)
+                result.append(x == 'TRUE')
             else:
                 if key in config.BINARY_ATTRIBUTES:
                     x = bytearray(x)

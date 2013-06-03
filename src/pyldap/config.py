@@ -15,12 +15,9 @@ BINARY_ATTRIBUTES = (
 
 
 BOOLEAN_ATTRIBUTES = (
+    'dereferenceAliases'
 )
 
-# allows other positive flags, ie 1 etc.
-POSITIVE_BOOLEAN_VALUES = (
- 'True'
-)
 
 SINGLE_VALUED = (
     'domainComponent', 'description'
