@@ -54,7 +54,7 @@ class pythonise(Aspect):
         """
         base = self._encode(base)
         filterstr = self._encode(filterstr)
-        attrlist = self._encode_listorvalue(attrlist)
+        attrlist = self._encode_listorvalue(inputlist=attrlist)
         #XXX test filterstr and attrlist!
         msgid_res = _next(base, scope, filterstr=filterstr, attrlist=attrlist)
         rtype = RES_SEARCH_ENTRY
@@ -72,7 +72,7 @@ class pythonise(Aspect):
                      clientctrls=None, timeout=-1, sizelimit=0):
         base = self._encode(base)
         filterstr = self._encode(filterstr)
-        attrlist = self._encode_listorvalue(attrlist)
+        attrlist = self._encode_listorvalue(inputlist=attrlist)
         #XXX test filterstr and attrlist!
         result = _next(base, scope, filterstr, attrlist, attrsonly,
                        serverctrls, clientctrls, timeout, sizelimit)
@@ -97,18 +97,22 @@ class pythonise(Aspect):
 
     def _encodeaddlist(self, modlist):
         result = [(self._encode(x[0]),
-                   self._encode_listorvalue(x[1]))
+                   self._encode_listorvalue(x[0], x[1]))
                   for x in modlist]
         return result
 
     def _encodemodifylist(self, modlist):
         result = [(x[0],
                    self._encode(x[1]),
-                   self._encode_listorvalue(x[2]))
+                   self._encode_listorvalue(x[1], x[2]))
                   for x in modlist]
         return result
 
-    def _encode_listorvalue(self, inputlist):
+    def _encode_listorvalue(self, key='', inputlist=None):
+        if key in config.BOOLEAN_ATTRIBUTES and inputlist != None:
+            if (inputlist):
+                return 'TRUE'
+            return 'FALSE'
         if isinstance(inputlist, list):
             for index, x in enumerate(inputlist):
                 inputlist[index] = self._encode(x)
