@@ -1,0 +1,21 @@
+* Overview
+** aspects
+*** block_attributes
+**** result4 (return values)
+*** type_conversion
+utf8 <-> unicode/boolean/bytearray
+**** result4 (return values)
+**** simple_bind (input)
+**** search_ext (input)
+**** modify_ext (input)
+**** passwd (input)
+**** who_am_i (input)
+**** delete_ext (input)
+**** add_ext (input)
+**** rename (input)
+will soon be needed
+*** async_search_returns_generator
+**** search_ext returns generator
+**** search_ext_s returns list(search_ext(...))
+*** single_values_as_scalars
+**** result4 (return values)
