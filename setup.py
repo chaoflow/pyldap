@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.3.dev0'
+version = '0.3'
 shortdesc = '\
 A more pythonic API to python-ldap, possibly to be merged into python-ldap.'
 
