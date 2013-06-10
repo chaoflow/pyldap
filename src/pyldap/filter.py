@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from ldap.filter import filter_format
+
 
 # all special characters except * are escaped, that means * can be
 # used to perform suffix/prefix/contains searches, monkey-patch if you
 # don't like
-ESCAPE_CHARS={
-#    '*': '\\2a',
+ESCAPE_CHARS = {
+    #'*': '\\2a',
     '(': '\\28',
     ')': '\\29',
     '/': '\\2f',
@@ -13,8 +13,12 @@ ESCAPE_CHARS={
     '\x00': '\\00',
 }
 
-class LDAPFilter(object):
 
+def escape_some_special_chars(value):
+    return map(lambda x: ESCAPE_CHARS.get(x, x), value)
+
+
+class LDAPFilter(object):
     def __init__(self, queryFilter=None):
         if queryFilter is not None \
                 and not isinstance(queryFilter, basestring) \
@@ -66,8 +70,8 @@ class LDAPFilter(object):
 
 
 class LDAPDictFilter(LDAPFilter):
-
-    def __init__(self, criteria, or_search=False, or_keys=None, or_values=None):
+    def __init__(self, criteria, or_search=False, or_keys=None,
+                 or_values=None):
         self.criteria = criteria
         self.or_search = or_search
         self.or_keys = or_keys
@@ -86,6 +90,8 @@ class LDAPDictFilter(LDAPFilter):
 
 
 class LDAPRelationFilter(LDAPFilter):
+    """XXX: WARNING: THIS SEEMS BROKEN
+    """
 
     def __init__(self, node, relation, or_search=True):
         self.relation = relation
@@ -109,8 +115,8 @@ class LDAPRelationFilter(LDAPFilter):
         for k, vals in parsedRelation.items():
             for v in vals:
                 if str(v) == '' \
-                  or str(k) == '' \
-                  or str(k) not in existing:
+                   or str(k) == '' \
+                   or str(k) not in existing:
                     continue
                 dictionary[str(v)] = self.gattrs[str(k)]
 
@@ -139,9 +145,9 @@ def dict_to_filter(criteria, or_search=False, or_keys=None, or_values=None):
             values = [values]
         attrfilter = None
         for value in values:
-            attr = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), attr))
+            attr = ''.join(escape_some_special_chars(value))
             if isinstance(value, basestring):
-                value = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), value))
+                value = ''.join(escape_some_special_chars(value))
             valuefilter = LDAPFilter('(%s=%s)' % (attr, value))
             if attrfilter is None:
                 attrfilter = valuefilter
