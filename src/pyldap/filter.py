@@ -134,35 +134,50 @@ class LDAPRelationFilter(LDAPFilter):
         return "LDAPRelationFilter('%s')" % (str(self),)
 
 
-def dict_to_filter(criteria, or_search=False, or_keys=None, or_values=None):
+def dict_to_filter(dct):
     """Turn dictionary criteria into ldap queryFilter string
+
+    Within a dictionary all things are combined with AND. Use a list
+    of dictionaries to OR (see criteria_to_filter)
+
+    ! as value prefix negates
     """
-    or_keys = (or_keys is None) and or_search or or_keys
-    or_values = (or_values is None) and or_search or or_values
     _filter = None
-    for attr, values in criteria.items():
-        if not isinstance(values, list):
+    for attr, values in dct.items():
+        attr = ''.join(escape_some_special_chars(attr))
+        if not isinstance(values, (list, tuple)):
             values = [values]
         attrfilter = None
         for value in values:
-            attr = ''.join(escape_some_special_chars(attr))
+            negate_value = False
             if isinstance(value, basestring):
+                if value[0] == "!":
+                    negate_value = True
+                    value = value[1:]
                 value = ''.join(escape_some_special_chars(value))
-            valuefilter = LDAPFilter('(%s=%s)' % (attr, value))
+            valuefilter = '(%s=%s)' % (attr, value)
+            if negate_value:
+                valuefilter = '(!%s)' % (valuefilter,)
             if attrfilter is None:
-                attrfilter = valuefilter
+                attrfilter = LDAPFilter(valuefilter)
                 continue
-            if or_values:
-                attrfilter |= valuefilter
-            else:
-                attrfilter &= valuefilter
+            attrfilter &= valuefilter
         if _filter is None:
             _filter = attrfilter
             continue
-        if or_keys:
-            _filter |= attrfilter
-        else:
-            _filter &= attrfilter
+        _filter &= attrfilter
     if _filter is None:
         _filter = LDAPFilter()
     return _filter
+
+
+
+def criteria_to_filter(criteria):
+    if isinstance(criteria, dict):
+        return dict_to_filter(criteria)
+
+    if isinstance(criteria, (list, tuple)):
+        return reduce(lambda acc, x: acc | x,
+                      (dict_to_filter(x) for x in criteria))
+
+    raise ValueError("Unknown criteria type. Need dict or list of dicts")
