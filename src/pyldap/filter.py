@@ -26,17 +26,17 @@ class LDAPFilter(object):
             raise TypeError('Query filter must be LDAPFilter or string')
         self._filter = queryFilter
         if isinstance(queryFilter, LDAPFilter):
-            self._filter = str(queryFilter)
+            self._filter = unicode(queryFilter)
 
     def __and__(self, other):
         if other is None:
             return self
         res = ''
         if isinstance(other, LDAPFilter):
-            other = str(other)
+            other = unicode(other)
         elif not isinstance(other, basestring):
             raise TypeError(u"unsupported operand type")
-        us = str(self)
+        us = unicode(self)
         if us and other:
             res = '(&%s%s)' % (us, other)
         elif us:
@@ -50,10 +50,10 @@ class LDAPFilter(object):
             return self
         res = ''
         if isinstance(other, LDAPFilter):
-            other = str(other)
+            other = unicode(other)
         elif not isinstance(other, basestring):
             raise TypeError(u"unsupported operand type")
-        us = str(self)
+        us = unicode(self)
         if us and other:
             res = '(|%s%s)' % (us, other)
         return LDAPFilter(res)
@@ -80,7 +80,7 @@ class LDAPDictFilter(LDAPFilter):
     def __str__(self):
         if not self.criteria:
             return ''
-        return str(dict_to_filter(self.criteria,
+        return unicode(dict_to_filter(self.criteria,
                                   or_search=self.or_search,
                                   or_keys=self.or_keys,
                                   or_values=self.or_values))
@@ -128,10 +128,10 @@ class LDAPRelationFilter(LDAPFilter):
             _filter = dict_to_filter(parsedRelation, self.or_search)
 
         return self.dictionary and \
-            str(dict_to_filter(self.dictionary, self.or_search)) or ''
+            unicode(dict_to_filter(self.dictionary, self.or_search)) or ''
 
     def __repr__(self):
-        return "LDAPRelationFilter('%s')" % (str(self),)
+        return "LDAPRelationFilter('%s')" % (unicode(self),)
 
 
 def dict_to_filter(dct):
@@ -169,7 +169,6 @@ def dict_to_filter(dct):
     if _filter is None:
         _filter = LDAPFilter()
     return _filter
-
 
 
 def criteria_to_filter(criteria):
