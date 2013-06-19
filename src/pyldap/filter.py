@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from ldap.filter import filter_format
+
 
 # all special characters except * are escaped, that means * can be
 # used to perform suffix/prefix/contains searches, monkey-patch if you
 # don't like
-ESCAPE_CHARS={
-#    '*': '\\2a',
+ESCAPE_CHARS = {
+    #'*': '\\2a',
     '(': '\\28',
     ')': '\\29',
     '/': '\\2f',
@@ -13,8 +13,12 @@ ESCAPE_CHARS={
     '\x00': '\\00',
 }
 
-class LDAPFilter(object):
 
+def escape_some_special_chars(value):
+    return map(lambda x: ESCAPE_CHARS.get(x, x), value)
+
+
+class LDAPFilter(object):
     def __init__(self, queryFilter=None):
         if queryFilter is not None \
                 and not isinstance(queryFilter, basestring) \
@@ -22,17 +26,17 @@ class LDAPFilter(object):
             raise TypeError('Query filter must be LDAPFilter or string')
         self._filter = queryFilter
         if isinstance(queryFilter, LDAPFilter):
-            self._filter = str(queryFilter)
+            self._filter = unicode(queryFilter)
 
     def __and__(self, other):
         if other is None:
             return self
         res = ''
         if isinstance(other, LDAPFilter):
-            other = str(other)
+            other = unicode(other)
         elif not isinstance(other, basestring):
             raise TypeError(u"unsupported operand type")
-        us = str(self)
+        us = unicode(self)
         if us and other:
             res = '(&%s%s)' % (us, other)
         elif us:
@@ -46,10 +50,10 @@ class LDAPFilter(object):
             return self
         res = ''
         if isinstance(other, LDAPFilter):
-            other = str(other)
+            other = unicode(other)
         elif not isinstance(other, basestring):
             raise TypeError(u"unsupported operand type")
-        us = str(self)
+        us = unicode(self)
         if us and other:
             res = '(|%s%s)' % (us, other)
         return LDAPFilter(res)
@@ -66,8 +70,8 @@ class LDAPFilter(object):
 
 
 class LDAPDictFilter(LDAPFilter):
-
-    def __init__(self, criteria, or_search=False, or_keys=None, or_values=None):
+    def __init__(self, criteria, or_search=False, or_keys=None,
+                 or_values=None):
         self.criteria = criteria
         self.or_search = or_search
         self.or_keys = or_keys
@@ -76,7 +80,7 @@ class LDAPDictFilter(LDAPFilter):
     def __str__(self):
         if not self.criteria:
             return ''
-        return str(dict_to_filter(self.criteria,
+        return unicode(dict_to_filter(self.criteria,
                                   or_search=self.or_search,
                                   or_keys=self.or_keys,
                                   or_values=self.or_values))
@@ -86,6 +90,8 @@ class LDAPDictFilter(LDAPFilter):
 
 
 class LDAPRelationFilter(LDAPFilter):
+    """XXX: WARNING: THIS SEEMS BROKEN
+    """
 
     def __init__(self, node, relation, or_search=True):
         self.relation = relation
@@ -109,8 +115,8 @@ class LDAPRelationFilter(LDAPFilter):
         for k, vals in parsedRelation.items():
             for v in vals:
                 if str(v) == '' \
-                  or str(k) == '' \
-                  or str(k) not in existing:
+                   or str(k) == '' \
+                   or str(k) not in existing:
                     continue
                 dictionary[str(v)] = self.gattrs[str(k)]
 
@@ -122,41 +128,55 @@ class LDAPRelationFilter(LDAPFilter):
             _filter = dict_to_filter(parsedRelation, self.or_search)
 
         return self.dictionary and \
-            str(dict_to_filter(self.dictionary, self.or_search)) or ''
+            unicode(dict_to_filter(self.dictionary, self.or_search)) or ''
 
     def __repr__(self):
-        return "LDAPRelationFilter('%s')" % (str(self),)
+        return "LDAPRelationFilter('%s')" % (unicode(self),)
 
 
-def dict_to_filter(criteria, or_search=False, or_keys=None, or_values=None):
+def dict_to_filter(dct):
     """Turn dictionary criteria into ldap queryFilter string
+
+    Within a dictionary all things are combined with AND. Use a list
+    of dictionaries to OR (see criteria_to_filter)
+
+    ! as value prefix negates
     """
-    or_keys = (or_keys is None) and or_search or or_keys
-    or_values = (or_values is None) and or_search or or_values
     _filter = None
-    for attr, values in criteria.items():
-        if not isinstance(values, list):
+    for attr, values in dct.items():
+        attr = ''.join(escape_some_special_chars(attr))
+        if not isinstance(values, (list, tuple)):
             values = [values]
         attrfilter = None
         for value in values:
-            attr = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), attr))
-            if isinstance(value, str):
-                value = ''.join(map(lambda x: ESCAPE_CHARS.get(x, x), value))
-            valuefilter = LDAPFilter('(%s=%s)' % (attr, value))
+            negate_value = False
+            if isinstance(value, basestring):
+                if value[0] == "!":
+                    negate_value = True
+                    value = value[1:]
+                value = ''.join(escape_some_special_chars(value))
+            valuefilter = '(%s=%s)' % (attr, value)
+            if negate_value:
+                valuefilter = '(!%s)' % (valuefilter,)
             if attrfilter is None:
-                attrfilter = valuefilter
+                attrfilter = LDAPFilter(valuefilter)
                 continue
-            if or_values:
-                attrfilter |= valuefilter
-            else:
-                attrfilter &= valuefilter
+            attrfilter &= valuefilter
         if _filter is None:
             _filter = attrfilter
             continue
-        if or_keys:
-            _filter |= attrfilter
-        else:
-            _filter &= attrfilter
+        _filter &= attrfilter
     if _filter is None:
         _filter = LDAPFilter()
     return _filter
+
+
+def criteria_to_filter(criteria):
+    if isinstance(criteria, dict):
+        return dict_to_filter(criteria)
+
+    if isinstance(criteria, (list, tuple)):
+        return reduce(lambda acc, x: acc | x,
+                      (dict_to_filter(x) for x in criteria))
+
+    raise ValueError("Unknown criteria type. Need dict or list of dicts")
