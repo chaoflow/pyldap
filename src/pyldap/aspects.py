@@ -221,29 +221,3 @@ class single_values_as_scalars(Aspect):
                     if isinstance(x[1][key], list) and len(x[1][key]) > 0:
                         x[1][key] = x[1][key][0]
         return result
-
-
-class convertBinary(Aspect):
-
-    @aspect.plumb
-    def search(_next, self, base, scope,
-               filterstr='(objectClass=*)', attrlist=None,
-               attrsonly=0):
-        for x in _next(base, scope, filterstr, attrlist, attrsonly):
-            yield self._convertbinary(x)
-
-    @aspect.plumb
-    def search_ext_s(_next, self, base, scope, filterstr='(objectClass=*)',
-                     attrlist=None, attrsonly=0, serverctrls=None,
-                     clientctrls=None, timeout=-1, sizelimit=0):
-        result = _next(base, scope, filterstr, attrlist, attrsonly,
-                       serverctrls, clientctrls, timeout, sizelimit)
-        return self._convertbinary(result)
-
-    def _convertbinary(self, result):
-        for x in result:
-            for key in x[1].keys():
-                if key in config.BINARY_ATTRIBUTES:
-                    for entry in x[1][key]:
-                        entry = bytearray(entry)
-        return result
