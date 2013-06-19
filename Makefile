@@ -71,4 +71,7 @@ update-ldap-schema:
 	mkdir -p etc/openldap/schema
 	cp ${NIX_PROFILE}/etc/openldap/schema/* etc/openldap/schema/
 
+profile: var var-clean
+	${NOSETESTS} -v -w . --with-cprofile ${ARGS}
+
 .PHONY: all bootstrap check coverage print-syspath pyoc-clean test-nose var var-clean

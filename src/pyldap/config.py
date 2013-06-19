@@ -13,14 +13,14 @@ BINARY_ATTRIBUTES = [
     'jpegPhoto'
 ]
 
-# allows other positive flags, ie 1 etc.
-POSITIVE_BOOLEAN_VALUES = [
-    'True'
+BOOLEAN_ATTRIBUTES = [
+    'dereferenceAliases', 'followReferrals'
 ]
 
-BOOLEAN_ATTRIBUTES = (
-    'dereferenceAliases'
-)
+# allows other positive flags, ie 1 etc.
+POSITIVE_BOOLEAN_VALUES = [
+    'TRUE'
+]
 
 SINGLE_VALUED = [
     'domainComponent', 'description'

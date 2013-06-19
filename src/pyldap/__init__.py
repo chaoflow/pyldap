@@ -16,9 +16,8 @@ SCOPE_ONELEVEL = ldap.SCOPE_ONELEVEL
 SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
 
 
-PyReconnectLDAPObject = aspects.searchGen(ldap.ldapobject.ReconnectLDAPObject)
-PyReconnectLDAPObject = aspects.encode(PyReconnectLDAPObject)
-PyReconnectLDAPObject = aspects.blockAttributes(PyReconnectLDAPObject)
-PyReconnectLDAPObject = aspects.convertBoolean(PyReconnectLDAPObject)
-PyReconnectLDAPObject = aspects.convertBinary(PyReconnectLDAPObject)
-PyReconnectLDAPObject = aspects.getSingleValues(PyReconnectLDAPObject)
+PyReconnectLDAPObject = aspects.async_search_returns_generator(
+    ldap.ldapobject.ReconnectLDAPObject)
+PyReconnectLDAPObject = aspects.type_conversion(PyReconnectLDAPObject)
+PyReconnectLDAPObject = aspects.block_attributes(PyReconnectLDAPObject)
+PyReconnectLDAPObject = aspects.single_values_as_scalars(PyReconnectLDAPObject)
