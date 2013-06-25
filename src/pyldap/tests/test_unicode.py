@@ -2,14 +2,12 @@ from __future__ import absolute_import
 
 from ldap import NO_SUCH_OBJECT
 from ldap import MOD_REPLACE
-from ldap import MOD_ADD
 from ldap import INVALID_CREDENTIALS
 
 from .. import PyReconnectLDAPObject
 from .. import SCOPE_BASE
 from ..testing import SlapdTestCase as TestCase
 
-import ipdb
 
 class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
     """Test the UnicodeUtf8 mixin with a ReconnectLDAPObject
@@ -85,7 +83,7 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
         self.assertEqual(result[1]['description'], self.UNICODE)
 
     def test_rename(self):
-        rdn2 = 'o=' + self.UNICODE  + self.UNICODE
+        rdn2 = 'o=' + self.UNICODE + self.UNICODE
         dn2 = rdn2 + ',o=o'
         self.pyldap.rename_s(self.UNICODE_DN, rdn2, delold=1)
         result = self.pyldap.search_s(dn2, SCOPE_BASE)[0]
@@ -93,6 +91,7 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_passwd(self):
         newpw = 'newsecret'
+
         def login():
             self.pyldap.bind_s(self.UNICODE_DN, newpw)
         self.assertRaises(INVALID_CREDENTIALS, login)
@@ -102,6 +101,7 @@ class TestUnicodeUtf8ReconnectLDAPObject(TestCase):
 
     def test_blockattributes(self):
         result = self.pyldap.search_s(self.UNICODE_DN, SCOPE_BASE)[0]
+
         def getblockedattr():
             return result[1]['userPassword']
         self.assertRaises(KeyError, getblockedattr)

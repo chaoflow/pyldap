@@ -5,8 +5,10 @@ from metachao.aspect import Aspect
 
 from ldap import RES_ANY
 from ldap import RES_SEARCH_ENTRY
-from ldap import SCOPE_BASE
 
+#import tpv
+#from tpv import ordereddict
+#from tpv.ordereddict import OrderedDict
 
 from . import config
 
@@ -158,7 +160,7 @@ class type_conversion(Aspect):
         return s
 
     def _decodebinary(self, binary):
-        return binary.decode();
+        return binary.decode()
 
     def _decode_list(self, key, inputlist):
         if key in config.BOOLEAN_ATTRIBUTES:
@@ -221,3 +223,90 @@ class single_values_as_scalars(Aspect):
                     if isinstance(x[1][key], list) and len(x[1][key]) > 0:
                         x[1][key] = x[1][key][0]
         return result
+
+
+class attribute_name_mapping_base(Aspect):
+    @property
+    def incoming_attribute_map(self):
+        return dict(self.attribute_name_map or ())
+
+    @property
+    def outgoing_attribute_map(self):
+        return dict((v, k) for k, v in (self.attribute_name_map or ()))
+
+
+class attribute_name_mapping(attribute_name_mapping_base):
+    @property
+    def attribute_name_map(self):
+        return self.directory.attribute_name_map
+
+    @aspect.plumb
+    def __getitem__(_next, self, key):
+        key = self.incoming_attribute_map.get(key, key)
+        value = _next(key)
+        return value
+
+    @aspect.plumb
+    def __setitem__(_next, self, key, value):
+        key = self.incoming_attribute_map.get(key, key)
+        return _next(key, value)
+
+    @aspect.plumb
+    def iteritems(_next, self):
+        return ((self.outgoing_attribute_map.get(k, k), v) for k, v in _next())
+
+    def items(self):
+        return self.iteritems()
+
+    @aspect.plumb
+    def update(_next, self, attributes):
+        attributes = OrderedDict(
+            (self.incoming_attribute_map.get(k, k), v)
+            for k, v in attributes.items()
+        )
+        return _next(attributes)
+
+
+class children_attribute_name_mapping(attribute_name_mapping_base):
+    attribute_name_map = aspect.aspectkw(None)
+
+    @aspect.plumb
+    def add(_next, self, attributes):
+        attributes = OrderedDict(
+            (self.incoming_attribute_map.get(k, k), v)
+            for k, v in attributes.items()
+        )
+        return _next(attributes)
+
+    # @aspect.plumb
+    # def __getitem__(_next, self, key):
+    #     node = _next(key)
+    #     if self.attribute_name_map:
+    #         dn = node.dn
+    #         id = node._id
+    #         node = attribute_name_mapping(
+    #             node,
+    #             attribute_name_map=self.attribute_name_map,
+    #         )
+    #         node.dn = dn
+    #         node._id = id
+    #     return node
+
+    @aspect.plumb
+    def search(_next, self, criteria=None, base_criteria=None, **kw):
+        if criteria is not None:
+            criteria = [dict((self.incoming_attribute_map.get(k, k), v)
+                             for k, v in crit.items())
+                        for crit in criteria]
+        if base_criteria is not None:
+            base_criteria = [dict((self.incoming_attribute_map.get(k, k), v)
+                                  for k, v in crit.items())
+                             for crit in base_criteria]
+        return _next(criteria=criteria, base_criteria=base_criteria, **kw)
+
+    # XXX: we need a way to block this, but let add from earlier
+    # on use the unblocked version. Actually @add should take care
+    # of that
+    # @aspect.plumb
+    # def __setitem__(_next, self, key, value):
+    #     pass
