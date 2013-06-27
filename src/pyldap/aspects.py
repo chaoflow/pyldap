@@ -8,7 +8,7 @@ from ldap import RES_SEARCH_ENTRY
 
 #import tpv
 #from tpv import ordereddict
-#from tpv.ordereddict import OrderedDict
+from tpv.ordereddict import OrderedDict
 
 from . import config
 
